@@ -1,7 +1,28 @@
 const mongoose = require('mongoose');
-const User = require('./models/User');
-const Thought = require('./models/Thought');
-const { getRandomName, users, getRandomThoughtText, getRandomReactionBody } = require('./utils/data');
+const User = require('../models/User');
+const Thought = require('../models/Thought');
+const { getRandomName, users, getRandomThoughtText, getRandomReactionBody } = require('../utils/data');
+
+// MongoDB connection string
+const mongoURI = 'mongodb://localhost:27017/friendsDB'; // replace with your actual connection string
+
+// Connect to MongoDB
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  connectTimeoutMS: 30000, // Increase timeout to 30 seconds
+})
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// Get random reaction username excluding the user who created the thought
+const getRandomReactionUsername = (excludeUsername) => {
+  let randomName;
+  do {
+    randomName = getRandomName();
+  } while (randomName === excludeUsername);
+  return randomName;
+};
 
 // Your seeding function
 const seedDatabase = async () => {
@@ -20,7 +41,7 @@ const seedDatabase = async () => {
         username: user.username,
         reactions: [...Array(2)].map(() => ({
           reactionBody: getRandomReactionBody(),
-          username: getRandomName(), // You can ensure this is consistent by using user.username
+          username: getRandomName(), // Ensure this is valid
         })),
       }));
 
@@ -31,10 +52,13 @@ const seedDatabase = async () => {
     }
 
     console.log('Database seeded successfully!');
-    mongoose.connection.close();
   } catch (err) {
-    console.error('Error seeding the database:', err);
+    console.error('Error seeding the database:', err.message);
+    console.error('Validation errors:', err.errors);
+  } finally {
+    mongoose.connection.close(); // Ensure the connection is closed after seeding
   }
 };
+
 
 seedDatabase();

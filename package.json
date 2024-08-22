@@ -3,10 +3,11 @@
   "version": "1.0.1",
   "description": "Mongoose back-end project - Main",
   "main": "index.js",
+
   "scripts": {
     "start": "node index",
     "dev": "nodemon index",
-    "seed": "node utils/seed"
+    "seed": "node utils/seeds"
   },
   "dependencies": {
     "express": "^4.17.1",

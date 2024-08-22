@@ -1,3 +1,5 @@
+const { ObjectId } = require('mongoose').Types;
+const mongoose = require('mongoose');
 const { User, Thought } = require('../models');
 
 module.exports = {
@@ -15,19 +17,27 @@ module.exports = {
   // Get a single user
   async getSingleUser(req, res) {
     try {
-      const user = await User.findOne({ _id: req.params.userId })
+      const userId = req.params.userId;
+  
+      // Validate the ObjectId
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({ message: 'Invalid user ID format' });
+      }
+  
+      // Find the user by ID
+      const user = await User.findById(userId) // Corrected the argument
         .select('-__v')
         .populate('thoughts')
         .populate('friends');
-
+  
       if (!user) {
         return res.status(404).json({ message: 'No user with that ID' });
       }
-
+  
       res.json(user);
     } catch (err) {
-      console.log(err);
-      return res.status(500).json(err);
+      console.error('Error fetching user:', err); // More informative logging
+      res.status(500).json({ message: 'Internal server error' });
     }
   },
 
@@ -44,19 +54,22 @@ module.exports = {
   // Delete a user and associated thoughts
   async deleteUser(req, res) {
     try {
-      const user = await User.findOneAndRemove({ _id: req.params.userId });
-
+      // Find the user by ID and remove
+      const user = await User.findByIdAndDelete({ _id: req.params.userId });
+  
       if (!user) {
         return res.status(404).json({ message: 'No user with that ID' });
       }
-
-      // Remove associated thoughts
-      await Thought.deleteMany({ username: user.username });
-
+  
+      // Delete associated thoughts concurrently
+      await Promise.all([
+        Thought.deleteMany({ username: user.username })
+      ]);
+  
       res.json({ message: 'User and associated thoughts deleted!' });
     } catch (err) {
-      console.log(err);
-      res.status(500).json(err);
+      console.error(err);
+      res.status(500).json({ message: 'Internal server error' });
     }
   },
 
